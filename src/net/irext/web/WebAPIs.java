@@ -97,7 +97,7 @@ public class WebAPIs {
         System.out.println(bodyJson);
         System.out.println();
         try {
-            // https://adc.github.trendmicro.com/api/v3/orgs/CoreTech-VMI-Unia/repos?access_token=xxx
+            // https://[githubBase]/api/v3/orgs/[orgName]/repos?access_token=xxx
             String url = "https://" + githubBase + "/api/v3/orgs/" + orgName + "/repos?access_token=" + accessToken;
             String response = postToServer(url, bodyJson);
             createRepoCallback.onCreateRepoSuccess(response);
@@ -113,8 +113,9 @@ public class WebAPIs {
         DeleteRepoRequest deleteRepoRequest = new DeleteRepoRequest();
         String bodyJson = deleteRepoRequest.toJson();
         try {
-            // https://adc.github.trendmicro.com/api/v3/repos/CoreTech-VMI-Unia/test-1?access_token=xxx
-            String url = "https://" + githubBase + "/api/v3/repos/" + orgName + "/" + name + "?access_token=" + accessToken;
+            // https://[githubBase]/api/v3/repos/[orgName]/test-1?access_token=xxx
+            String url = "https://" + githubBase + "/api/v3/repos/" + orgName + "/" + name +
+                    "?access_token=" + accessToken;
             String response = deleteToServer(url, bodyJson);
             deleteRepoCallback.onDeleteRepoSuccess(response);
         } catch (Exception e) {
@@ -131,7 +132,7 @@ public class WebAPIs {
         createFileRequest.setContent(content);
         String bodyJson = createFileRequest.toJson();
         try {
-            // https://adc.github.trendmicro.com/api/v3/repos/CoreTech-VMI-Unia/test-1/contents/empty?access_token=xxx
+            // https://[githubBase]/api/v3/repos/[orgName]/test-1/contents/empty?access_token=xxx
             String url = "https://" + githubBase + "/api/v3/repos/" + orgName + "/" + repoName + "/contents/" +
                     filePath + "?access_token=" + accessToken;
             String response = putToServer(url, bodyJson);

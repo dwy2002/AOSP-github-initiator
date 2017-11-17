@@ -115,7 +115,7 @@ public class AOSPGitInitiator {
         this.destRoot = destRoot;
         this.githubBase = githubBase;
         this.orgName = orgName;
-        // ssh://git@adc.github.trendmicro.com/CoreTech-VMI-Unia/
+        // ssh://[githubBase]/[orgName]/
         this.githubOrgURL = "ssh://git@" + githubBase + "/" + orgName + "/";
     }
 
