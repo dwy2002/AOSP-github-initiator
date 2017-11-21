@@ -1,2 +1,2 @@
 # AOSP-github-initiator
-A jar tool to initiate your own AOSP projects for your own organization
+此工具可以帮助用户将Google官方AOSP某个特定分支的代码完全克隆到自己创建的github(EE)组织中
