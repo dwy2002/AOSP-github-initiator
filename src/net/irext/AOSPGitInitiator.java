@@ -118,8 +118,6 @@ public class AOSPGitInitiator {
 
     private static final String CONFIG_CORE_FILEMODE = "filemode";
 
-
-    private String action;
     private String token;
     private String sourceRoot;
     private String destRoot;
