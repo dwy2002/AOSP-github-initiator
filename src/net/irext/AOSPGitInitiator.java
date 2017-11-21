@@ -1,5 +1,6 @@
 package net.irext;
 
+import com.nikhaldimann.inieditor.IniEditor;
 import net.irext.web.WebAPICallbacks;
 import net.irext.web.WebAPIs;
 import org.w3c.dom.*;
@@ -40,7 +41,7 @@ public class AOSPGitInitiator {
              */
             if (6 != args.length) {
                 System.out.println("invalid parameter");
-                System.out.println("Please call this method like java -jar AOSPGitInitiator.jar [token = 0] " +
+                System.out.println("Please call this method like java -jar AOSPGitInitiator.jar [action] [token] " +
                         "[source_repo_root] [dest_repo_root] [github base] [organization name]");
                 return;
             }
@@ -68,6 +69,8 @@ public class AOSPGitInitiator {
                     agi.createRepo();
                 } else if (action.equals("delete")) {
                     agi.deleteRepo();
+                } else if (action.equals("update-remote")) {
+                    agi.updateRemote();
                 } else {
                     System.out.println("Invalid action : " + action);
                 }
@@ -79,6 +82,7 @@ public class AOSPGitInitiator {
         }
     }
 
+    private static final String MANIFEST_PATH = "/.repo/manifests/";
     private static final String MANIFEST_XML = "/.repo/manifests/default.xml";
 
     private static final String NODE_NAME_PROJECT = "project";
@@ -100,6 +104,19 @@ public class AOSPGitInitiator {
 
     private static final String NODE_REPO_HOOKS_IN_PROJECT = "in-project";
 
+    private static final String CONFIG_REMOTE_ORIGIN = "remote \"origin\"";
+    private static final String CONFIG_CORE = "core";
+
+    private static final String CONFIG_REMOTE_URL = "url";
+    private static final String CONFIG_REMOTE_REVIEW = "review";
+    private static final String CONFIG_REMOTE_PROJECT_NAME = "projectname";
+    private static final String CONFIG_REMOTE_FETCH = "fetch";
+
+    private static final String CONFIG_FETCH = "+refs/heads/*:refs/remotes/origin/*";
+
+    private static final String CONFIG_CORE_FILEMODE = "filemode";
+
+
     private String action;
     private String token;
     private String sourceRoot;
@@ -119,51 +136,9 @@ public class AOSPGitInitiator {
         this.githubOrgURL = "ssh://git@" + githubBase + "/" + orgName + "/";
     }
 
-    private void deleteRepo() {
-        Document doc = null;
-        Element root = null;
-        NodeList topNodes = null;
-        InputStream sourceInput = null;
-
-        String sourceManifestFilePath = sourceRoot + MANIFEST_XML;
-
-        List<String> projectList = new ArrayList<>();
-
-        try {
-            DocumentBuilder domBuilder = DocumentBuilderFactory.newInstance()
-                    .newDocumentBuilder();
-
-            sourceInput = new FileInputStream(sourceManifestFilePath);
-            doc = domBuilder.parse(sourceInput);
-            root = doc.getDocumentElement();
-            topNodes = root.getChildNodes();
-            for (int topIndex = 0; topIndex < topNodes.getLength(); topIndex++) {
-                Node keyItemNode = topNodes.item(topIndex);
-
-                if (keyItemNode.getNodeType() == Node.ELEMENT_NODE) {
-                    if (keyItemNode.getNodeName().equals(NODE_NAME_PROJECT)) {
-                        NamedNodeMap attributes = keyItemNode.getAttributes();
-                        for (int attriIndex = 0; attriIndex < attributes.getLength(); attriIndex++) {
-                            Node item = attributes.item(attriIndex);
-                            if (item.getNodeName().equals(NODE_PROJECT_ATTR_NAME)) {
-                                String nameValue = item.getNodeValue();
-                                String newNameValue = nameValue.replaceAll("/", "_");
-                                projectList.add(newNameValue);
-                            }
-                        }
-                    }
-                }
-            }
-            DeleteRepoTask deleteRepoTask = new DeleteRepoTask(projectList, githubBase, orgName);
-            deleteRepoTask.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     private void createRepo() {
-        // step 1, build default.xml for manifest project
-        System.out.println("Step 1. create target default.xml");
+        System.out.println("=== create repos ===");
         Document doc = null;
         Element root = null;
         NodeList topNodes = null;
@@ -171,8 +146,13 @@ public class AOSPGitInitiator {
 
         String sourceManifestFilePath = sourceRoot + MANIFEST_XML;
         String destManifestFilePath = destRoot + MANIFEST_XML;
+        String destManifestFolder = destRoot + MANIFEST_PATH;
 
         try {
+            // step 1, build default.xml for manifest project
+            File destFolder = new File(destManifestFolder);
+            destFolder.mkdirs();
+
             DocumentBuilder domBuilder = DocumentBuilderFactory.newInstance()
                     .newDocumentBuilder();
 
@@ -260,7 +240,7 @@ public class AOSPGitInitiator {
             DOMSource source = new DOMSource(doc);
             StreamResult result = new StreamResult(new File(destManifestFilePath));
             transformer.transform(source, result);
-            System.out.println("Step 1 done");
+            System.out.println("target default.xml generated");
 
             // step 2. delete sub-projects under github organization
             CreateRepoTask createRepoTask = new CreateRepoTask(projectList, githubBase, orgName);
@@ -278,6 +258,117 @@ public class AOSPGitInitiator {
         }
     }
 
+    private void deleteRepo() {
+        System.out.println("=== delete repos ===");
+
+        Document doc = null;
+        Element root = null;
+        NodeList topNodes = null;
+        InputStream sourceInput = null;
+
+        String sourceManifestFilePath = sourceRoot + MANIFEST_XML;
+
+        List<String> projectList = new ArrayList<>();
+
+        try {
+            DocumentBuilder domBuilder = DocumentBuilderFactory.newInstance()
+                    .newDocumentBuilder();
+
+            sourceInput = new FileInputStream(sourceManifestFilePath);
+            doc = domBuilder.parse(sourceInput);
+            root = doc.getDocumentElement();
+            topNodes = root.getChildNodes();
+            for (int topIndex = 0; topIndex < topNodes.getLength(); topIndex++) {
+                Node keyItemNode = topNodes.item(topIndex);
+
+                if (keyItemNode.getNodeType() == Node.ELEMENT_NODE) {
+                    if (keyItemNode.getNodeName().equals(NODE_NAME_PROJECT)) {
+                        NamedNodeMap attributes = keyItemNode.getAttributes();
+                        for (int attriIndex = 0; attriIndex < attributes.getLength(); attriIndex++) {
+                            Node item = attributes.item(attriIndex);
+                            if (item.getNodeName().equals(NODE_PROJECT_ATTR_NAME)) {
+                                String nameValue = item.getNodeValue();
+                                String newNameValue = nameValue.replaceAll("/", "_");
+                                projectList.add(newNameValue);
+                            }
+                        }
+                    }
+                }
+            }
+            DeleteRepoTask deleteRepoTask = new DeleteRepoTask(projectList, githubBase, orgName);
+            deleteRepoTask.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (null != sourceInput) {
+                try {
+                    sourceInput.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void updateRemote() {
+        System.out.println("=== update remote for repos ===");
+
+        Document doc = null;
+        Element root = null;
+        NodeList topNodes = null;
+        InputStream sourceInput = null;
+
+        String sourceManifestFilePath = sourceRoot + MANIFEST_XML;
+        String sourceRootPath = sourceRoot;
+
+        List<ProjectInfo> projectList = new ArrayList<>();
+
+        try {
+            DocumentBuilder domBuilder = DocumentBuilderFactory.newInstance()
+                    .newDocumentBuilder();
+
+            sourceInput = new FileInputStream(sourceManifestFilePath);
+            doc = domBuilder.parse(sourceInput);
+            root = doc.getDocumentElement();
+            topNodes = root.getChildNodes();
+            for (int topIndex = 0; topIndex < topNodes.getLength(); topIndex++) {
+                Node keyItemNode = topNodes.item(topIndex);
+
+                if (keyItemNode.getNodeType() == Node.ELEMENT_NODE &&
+                    keyItemNode.getNodeName().equals(NODE_NAME_PROJECT)) {
+                    NamedNodeMap attributes = keyItemNode.getAttributes();
+                    ProjectInfo pi = new ProjectInfo();
+                    for (int attriIndex = 0; attriIndex < attributes.getLength(); attriIndex++) {
+                        Node item = attributes.item(attriIndex);
+                        if (item.getNodeName().equals(NODE_PROJECT_ATTR_NAME)) {
+                            String nameValue = item.getNodeValue();
+                            String newNameValue = nameValue.replaceAll("/", "_");
+                            pi.setProjectName(newNameValue);
+                        } else if (item.getNodeName().equals(NODE_PROJECT_ATTR_PATH)) {
+                            String pathValue = item.getNodeValue();
+                            pi.setPath(pathValue);
+                        }
+                    }
+                    projectList.add(pi);
+                }
+            }
+            UpdateRemoteTask updateRemoteTask = new UpdateRemoteTask(sourceRoot, projectList);
+            updateRemoteTask.start();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (null != sourceInput) {
+                try {
+                    sourceInput.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    // helper threads
     private class CreateRepoTask extends Thread {
         private List<String> projectList;
         private String githubBase;
@@ -369,7 +460,7 @@ public class AOSPGitInitiator {
                         new WebAPICallbacks.DeleteRepoCallback() {
                             @Override
                             public void onDeleteRepoSuccess(String response) {
-                                System.out.println("delete repo successfully (" + ++deletedProject + "/" +
+                                System.out.println("delete repo successfully : " + repoName + " (" + ++deletedProject + "/" +
                                         totalProjectCount + ")");
                             }
 
@@ -384,6 +475,89 @@ public class AOSPGitInitiator {
                             }
                         });
             }
+        }
+    }
+
+    private class UpdateRemoteTask extends Thread {
+        private String sourceRoot;
+        private List<ProjectInfo> projectList;
+
+        UpdateRemoteTask(String sourceRoot, List<ProjectInfo> projectList) {
+            this.sourceRoot = sourceRoot;
+            this.projectList = projectList;
+        }
+
+        @Override
+        public void run() {
+            try {
+                int iniProcessed = 0;
+                for (ProjectInfo pi : projectList) {
+                    String targetFile = sourceRoot + "/" + pi.getPath() + "/.git/config";
+                    File gitConfigFile = new File(targetFile);
+                    if (!gitConfigFile.exists()) {
+                        System.out.println("validate file failed : " + gitConfigFile);
+                    } else {
+                        // read config file in ini format
+                        IniEditor gitConfig = new IniEditor();
+                        gitConfig.load(targetFile);
+                        gitConfig.addSection("remote \"origin\"");
+                        gitConfig.set(CONFIG_REMOTE_ORIGIN,
+                                CONFIG_REMOTE_URL,
+                                "git@adc.github.trendmicro.com:CoreTech-VMI-Unia/" + pi.getProjectName() + ".git");
+                        gitConfig.set(CONFIG_REMOTE_ORIGIN,
+                                CONFIG_REMOTE_REVIEW,
+                                "");
+                        gitConfig.set(CONFIG_REMOTE_ORIGIN,
+                                CONFIG_REMOTE_PROJECT_NAME,
+                                pi.getProjectName());
+                        gitConfig.set(CONFIG_REMOTE_ORIGIN,
+                                CONFIG_REMOTE_FETCH,
+                                CONFIG_FETCH);
+
+                        // update file mode as well
+                        gitConfig.set(CONFIG_CORE,
+                                CONFIG_CORE_FILEMODE,
+                                "false");
+                        iniProcessed++;
+                        gitConfig.save(targetFile);
+                        System.out.println("git remote config done : " + gitConfigFile +
+                                ", (" + iniProcessed + "/" + projectList.size() + ")");
+                    }
+                }
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // helper bean
+    private class ProjectInfo {
+        private String path;
+        private String projectName;
+
+        ProjectInfo(String path, String projectName) {
+            this.path = path;
+            this.projectName = projectName;
+        }
+
+        ProjectInfo () {
+
+        }
+
+        String getPath() {
+            return path;
+        }
+
+        void setPath(String path) {
+            this.path = path;
+        }
+
+        public String getProjectName() {
+            return projectName;
+        }
+
+        void setProjectName(String projectName) {
+            this.projectName = projectName;
         }
     }
 }
