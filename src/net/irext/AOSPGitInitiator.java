@@ -104,7 +104,9 @@ public class AOSPGitInitiator {
 
     private static final String NODE_REPO_HOOKS_IN_PROJECT = "in-project";
 
-    private static final String CONFIG_REMOTE_ORIGIN = "remote \"origin\"";
+    private static final String GITHUB_REMOTE_NAME = "origin";
+
+    private static final String CONFIG_REMOTE_ORIGIN = "remote \"" + GITHUB_REMOTE_NAME + "\"";
     private static final String CONFIG_CORE = "core";
 
     private static final String CONFIG_REMOTE_URL = "url";
@@ -112,7 +114,7 @@ public class AOSPGitInitiator {
     private static final String CONFIG_REMOTE_PROJECT_NAME = "projectname";
     private static final String CONFIG_REMOTE_FETCH = "fetch";
 
-    private static final String CONFIG_FETCH = "+refs/heads/*:refs/remotes/origin/*";
+    private static final String CONFIG_FETCH = "+refs/heads/*:refs/remotes/" + GITHUB_REMOTE_NAME + "/*";
 
     private static final String CONFIG_CORE_FILEMODE = "filemode";
 
@@ -173,8 +175,8 @@ public class AOSPGitInitiator {
                         for (int attriIndex = 0; attriIndex < attributes.getLength(); attriIndex++) {
                             Node item = attributes.item(attriIndex);
                             if (item.getNodeName().equals(NODE_REMOTE_ATTR_NAME)) {
-                                System.out.println("replace remote->name to 'origin'");
-                                item.setNodeValue("origin");
+                                System.out.println("replace remote->name to github remote name");
+                                item.setNodeValue(GITHUB_REMOTE_NAME);
                             } else if (item.getNodeName().equals(NODE_REMOTE_ATTR_FETCH)) {
                                 System.out.println("replace remote->fetch to custom github URL");
                                 item.setNodeValue(this.githubOrgURL);
@@ -192,8 +194,8 @@ public class AOSPGitInitiator {
                                 System.out.println("replace default->revision to 'master'");
                                 item.setNodeValue("master");
                             } else if (item.getNodeName().equals(NODE_DEFAULT_ATTR_REMOTE)) {
-                                System.out.println("replace default->remote to 'origin'");
-                                item.setNodeValue("origin");
+                                System.out.println("replace default->remote to github remote name");
+                                item.setNodeValue(GITHUB_REMOTE_NAME);
                             } else if (item.getNodeName().equals(NODE_DEFAULT_ATTR_SYNCJ)) {
                                 System.out.println("replace default->sync-j to '4'");
                                 item.setNodeValue("4");
@@ -500,7 +502,7 @@ public class AOSPGitInitiator {
                         // read config file in ini format
                         IniEditor gitConfig = new IniEditor();
                         gitConfig.load(targetFile);
-                        gitConfig.addSection("remote \"origin\"");
+                        gitConfig.addSection(CONFIG_REMOTE_ORIGIN);
                         gitConfig.set(CONFIG_REMOTE_ORIGIN,
                                 CONFIG_REMOTE_URL,
                                 "git@adc.github.trendmicro.com:CoreTech-VMI-Unia/" + pi.getProjectName() + ".git");
