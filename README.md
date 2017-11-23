@@ -1,5 +1,5 @@
 # AOSP-github-initiator
-This tools helps building your own AOSP organization and porting all source code of AOSP to it
+This tool helps building your own AOSP organization and porting all source code of AOSP to it
 
 ### Prerequisites
 1. Create a mirror of Google AOSP and repo init+sync to your local machine, refer to https://source.android.com/source/downloading for details. In this case, we sync the source code to the local folder eg. /home/git/aosp
@@ -32,7 +32,7 @@ organizationName | organization name which will hold all AOSP projects, eg. my-a
 1. Do repo init+sync for Google official AOSP (refer to prerequisites, step 1)
 2. Run **java -jar AOSP-github-initiator.jar delete ...** (not necessary for the first time)
 3. Run **java -jar AOSP-github-initiator.jar add ...** (after this step, you could see all the projects are created in your organization and a new default.xml is generated in dest_path/.repo/manifests/)
-4. Run **java -jar AOSP-github-initiator.jar update-remote...** (after this step, you could see there is a new remote tag is created in any of your Android project, eg. build/make/.git/config
+4. Run **java -jar AOSP-github-initiator.jar update-remote...** (after this step, you could see there is a new remote tag created in any of your Android project, eg. build/make/.git/config
 
 ```
 [core]
@@ -52,13 +52,22 @@ projectname = platform_build
 fetch = +refs/heads/*:refs/remotes/origin/*
 ```
 
-5. CD to your AOSP root path, With repo batch commands, you can complete the left work
+5. cd to your AOSP root path, with repo batch commands, you can complete the left work
 
 ```
 $ cd [src_path]
 $ repo forall -c git checkout 'some AOSP branch' -b 'your own branch name'
 $ repo forall -c git push origin 'your own branch name'
 ```
+
+**For some shallow fetched projects in AOSP, you can use following command to unshallow fetch them again, and then push to your own remote**
+```
+$ git forall -c git fetch --unshallow aosp
+```
+
+:cake:
+---
+
 
 Contact me for any questions
 * Email: strawmanbobi@163.com
