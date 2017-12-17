@@ -503,7 +503,7 @@ public class AOSPGitInitiator {
                         gitConfig.addSection(CONFIG_REMOTE_ORIGIN);
                         gitConfig.set(CONFIG_REMOTE_ORIGIN,
                                 CONFIG_REMOTE_URL,
-                                "git@adc.github.trendmicro.com:CoreTech-VMI-Unia/" + pi.getProjectName() + ".git");
+                                "git@" + githubBase + ":" + orgName + "/" + pi.getProjectName() + ".git");
                         gitConfig.set(CONFIG_REMOTE_ORIGIN,
                                 CONFIG_REMOTE_REVIEW,
                                 "");
